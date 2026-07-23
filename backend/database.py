@@ -5,8 +5,13 @@ class Database:
     def __init__(self):
         try:
             self.client = MongoClient(Config.MONGO_URI, serverSelectionTimeoutMS=5000)
-            self.db = self.client.get_database()
             
+            # Extract default DB from URI, or fallback to 'product_sentiment_db'
+            try:
+                self.db = self.client.get_database()
+            except Exception:
+                self.db = self.client["product_sentiment_db"]
+                
             # Initialize collections
             self.users = self.db.users
             self.products = self.db.products
