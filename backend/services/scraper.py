@@ -1,5 +1,9 @@
 import time
+from datetime import datetime
 import undetected_chromedriver as uc
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # Suppress the harmless WinError 6 cleanup exception
 try:
@@ -12,11 +16,6 @@ try:
     uc.Chrome.__del__ = custom_del
 except Exception:
     pass
-
-from datetime import datetime
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 def scrape_product(product_name: str) -> list:
     """
@@ -36,24 +35,21 @@ def scrape_product(product_name: str) -> list:
     chrome_options.add_argument("--no-sandbox")
     
     try:
-        # Use undetected_chromedriver and specify version 149 to match system Chrome
+        # Use undetected_chromedriver
         driver = uc.Chrome(options=chrome_options, version_main=149)
     except Exception as e:
         print(f"Error initializing Chrome driver: {e}")
         return reviews_data
         
     try:
-        # 1. Search for the product on Flipkart (sorted by popularity to avoid 0-review sponsored items)
         search_url = f"https://www.flipkart.com/search?q={product_name.replace(' ', '+')}&sort=popularity"
         driver.get(search_url)
-        time.sleep(4) # Wait for page load and potential dynamic content
+        time.sleep(4)
         
-        # 2. Find the first product link
         links = driver.find_elements(By.TAG_NAME, "a")
         product_url = None
         for link in links:
             href = link.get_attribute("href")
-            # Flipkart product URLs contain '/p/' and 'pid='
             if href and "/p/" in href and "pid=" in href:
                 product_url = href
                 break
@@ -65,7 +61,6 @@ def scrape_product(product_name: str) -> list:
             print("Could not retrieve product URL.")
             return reviews_data
             
-        # 3. Navigate to 'All Reviews' page
         reviews_url_base = product_url.replace('/p/', '/product-reviews/')
         if '?' in reviews_url_base:
             reviews_url_base += '&'
@@ -77,19 +72,15 @@ def scrape_product(product_name: str) -> list:
             reviews_url = f"{reviews_url_base}page={page}"
             driver.get(reviews_url)
             
-            # Wait until reviews load instead of hardcoded sleep
             try:
                 wait = WebDriverWait(driver, 10)
                 wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(@class, 'EKFha-') or contains(text(), 'Helpful for')]")))
             except:
-                pass # Just try our best
+                pass
                 
-            # Try Old UI first
             review_blocks = driver.find_elements(By.XPATH, "//div[contains(@class, 'EKFha-')]")
             
-            # If Old UI fails, try New UI (React Native Web)
             if not review_blocks:
-                # Find all "Verified Purchase" text nodes and traverse up to the review container
                 vp_elements = driver.find_elements(By.XPATH, "//*[text()='Verified Purchase']")
                 for vp in vp_elements:
                     try:
@@ -100,26 +91,23 @@ def scrape_product(product_name: str) -> list:
                         continue
 
             if not review_blocks:
-                break # No more reviews found on this page
+                break
                 
             for block in review_blocks:
                 if len(reviews_data) >= 30:
                     break
                 try:
-                    # Get raw lines and filter out empty strings and floating bullet points
                     raw_lines = [l.strip() for l in block.text.split('\n') if l.strip()]
                     lines = [l for l in raw_lines if l not in ['', '·', '•', '*', '.']]
                     
                     if not lines:
                         continue
                         
-                    # 1. Rating
                     rating = "0"
                     first_word = lines[0].split()[0]
                     if first_word.replace('.', '', 1).isdigit():
                         rating = first_word
 
-                    # 3. Extract Reviewer Name FIRST
                     reviewer_name = "Anonymous"
                     name_found_idx = len(lines)
                     for k in range(len(lines)-1, 0, -1):
@@ -131,7 +119,7 @@ def scrape_product(product_name: str) -> list:
                             continue
                         if l.startswith(", "):
                             continue
-                        if l.strip().isdigit(): # Skip up/down votes
+                        if l.strip().isdigit():
                             continue
                         if l == "READ MORE":
                             continue
@@ -142,8 +130,6 @@ def scrape_product(product_name: str) -> list:
                         name_found_idx = k
                         break
 
-                    # 2. Extract Text
-                    # Text usually starts after the title or "Review for:"
                     start_idx = 1
                     if len(lines) > 1:
                         if lines[1].startswith("Review for:"):
@@ -163,9 +149,7 @@ def scrape_product(product_name: str) -> list:
                     else:
                         text = ""
 
-                    # Cleanup review text
                     clean_review_text = text.replace("READ MORE", "").strip()
-                    # Remove leading bullet points or strange chars if they snuck in
                     while clean_review_text and clean_review_text[0] in ['', '·', '•', '-', '*']:
                         clean_review_text = clean_review_text[1:].strip()
                     
@@ -190,7 +174,7 @@ def scrape_product(product_name: str) -> list:
                     print(f"Parsing error: {e}")
                     continue
             
-            page += 1 # Load next page of reviews
+            page += 1
             time.sleep(2)
                 
     except Exception as e:
