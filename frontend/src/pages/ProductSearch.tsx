@@ -31,7 +31,8 @@ export default function ProductSearch() {
       return
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+    // Hardcoding the live Render URL to guarantee connection
+    const apiUrl = 'https://product-sentiment-backend-xqm3.onrender.com/api'
 
     try {
       // 1. Start Scraping

@@ -22,8 +22,8 @@ export default function AuthPage() {
     const endpoint = isLogin ? '/login' : '/register'
     const payload = isLogin ? { email, password } : { name, email, password }
     
-    // In production on Vercel, VITE_API_URL is set. In dev, we fallback if needed.
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+    // Hardcoding the live Render URL to guarantee connection
+    const apiUrl = 'https://product-sentiment-backend-xqm3.onrender.com/api'
 
     try {
       const res = await fetch(`${apiUrl}/auth${endpoint}`, {
