@@ -35,8 +35,8 @@ def scrape_product(product_name: str) -> list:
     chrome_options.add_argument("--no-sandbox")
     
     try:
-        # Use undetected_chromedriver
-        driver = uc.Chrome(options=chrome_options, version_main=149)
+        # Use undetected_chromedriver without hardcoded version so it auto-detects
+        driver = uc.Chrome(options=chrome_options)
     except Exception as e:
         print(f"Error initializing Chrome driver: {e}")
         return reviews_data
