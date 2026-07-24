@@ -32,7 +32,7 @@ export default function ProductSearch() {
     }
 
     // Hardcoding the live Render URL to guarantee connection
-    const apiUrl = 'https://product-sentiment-backend-xqm3.onrender.com/api'
+    const apiUrl = 'https://sentiment-backend-v2.onrender.com/api'
 
     try {
       // 1. Start Scraping

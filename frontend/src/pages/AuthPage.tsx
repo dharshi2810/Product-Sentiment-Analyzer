@@ -23,7 +23,7 @@ export default function AuthPage() {
     const payload = isLogin ? { email, password } : { name, email, password }
     
     // Hardcoding the live Render URL to guarantee connection
-    const apiUrl = 'https://product-sentiment-backend-xqm3.onrender.com/api'
+    const apiUrl = 'https://sentiment-backend-v2.onrender.com/api'
 
     try {
       const res = await fetch(`${apiUrl}/auth${endpoint}`, {
